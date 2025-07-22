@@ -6,6 +6,7 @@ SOURCE_REPO=$1
 SOURCE_BRANCH=$2
 DESTINATION_REPO=$3
 DESTINATION_BRANCH=$4
+USE_LFS=$5
 
 if ! echo $SOURCE_REPO | grep -Eq ':|@|\.git\/?$'; then
   if [[ -n "$SSH_PRIVATE_KEY" || -n "$SOURCE_SSH_PRIVATE_KEY" ]]; then
@@ -37,6 +38,19 @@ fi
 
 git remote add destination "$DESTINATION_REPO"
 
+# Check if the repository required LFS
+if [[ "$USE_LFS" == "true" ]]; then
+  # Ensure git-lfs is installed and initialized
+  if ! command -v git-lfs >/dev/null 2>&1; then
+    echo "❌ Git LFS is not installed."
+    exit 1
+  fi
+  git lfs install
+  git lfs pull source
+else
+  echo "Skipping LFS pull as USE_LFS is set to false."
+fi
+
 # Pull all branches references down locally so subsequent commands can see them
 git fetch source '+refs/heads/*:refs/heads/*' --update-head-ok
 
@@ -46,6 +60,12 @@ git --no-pager branch -a -vv
 if [[ -n "$DESTINATION_SSH_PRIVATE_KEY" ]]; then
   # Push using destination ssh key if provided
   git config --local core.sshCommand "/usr/bin/ssh -i ~/.ssh/dst_rsa"
+fi
+
+if [[ "$USE_LFS" == "true" ]]; then
+  GIT_TRACE=1 GIT_CURL_VERBOSE=1 git lfs push destination "$DESTINATION_BRANCH"
+else
+  echo "Skipping LFS push as USE_LFS is set to false."
 fi
 
 git push destination "${SOURCE_BRANCH}:${DESTINATION_BRANCH}" -f
