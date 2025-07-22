@@ -63,7 +63,7 @@ if [[ -n "$DESTINATION_SSH_PRIVATE_KEY" ]]; then
 fi
 
 if [[ "$USE_LFS" == "true" ]]; then
-  GIT_TRACE=1 GIT_CURL_VERBOSE=1 git lfs push destination "$DESTINATION_BRANCH"
+  GIT_TRACE=1 GIT_CURL_VERBOSE=1 git lfs push destination "$SOURCE_BRANCH"
 else
   echo "Skipping LFS push as USE_LFS is set to false."
 fi
